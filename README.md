@@ -1,4 +1,6 @@
-# Omadots
+# SigmaOS Omadots
+
+> Forked from omacom/omadots (MIT). See `SIGMAOS_FORK.md`.
 
 Shared configs between all the Omacoms.
 
