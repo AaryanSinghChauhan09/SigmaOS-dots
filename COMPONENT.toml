@@ -1,6 +1,6 @@
 [component]
-name = "omadots"
-id = "sigmaos-omadots"
+name = "sigmaos-dots"
+id = "sigmaos-dots"
 kind = "component"
 license = "GPL-3.0-or-later"
 
