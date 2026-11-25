@@ -1,0 +1,83 @@
+#compdef omarchy
+
+_omarchy_summary_from_file() {
+  local file="$1" line
+  REPLY=""
+
+  [[ -r $file ]] || return 1
+
+  while IFS= read -r line; do
+    if [[ $line == '# omarchy:summary='* ]]; then
+      REPLY="${line#'# omarchy:summary='}"
+      return 0
+    fi
+  done < "$file"
+
+  return 1
+}
+
+_omarchy() {
+  local omarchy_path bin_dir
+  omarchy_path=$(command -v omarchy 2>/dev/null) || return 0
+  bin_dir=$(dirname -- "$(readlink -f -- "$omarchy_path" 2>/dev/null || printf '%s' "$omarchy_path")")
+  [[ -d $bin_dir ]] || return 0
+
+  local prefix="omarchy"
+  local i part
+  for ((i = 2; i < CURRENT; i++)); do
+    part="${words[i]}"
+    [[ -z $part || $part == -* ]] && continue
+    prefix+="-$part"
+  done
+
+  local -A seen=() descriptions=() descendant_counts=() has_exact_summary=()
+  local -a candidates=() described_candidates=()
+  local file basename rest next exact_file summary
+
+  setopt local_options null_glob
+  for file in "$bin_dir/$prefix"-*; do
+    [[ -f $file && -x $file ]] || continue
+    basename="${file:t}"
+    rest="${basename#$prefix-}"
+    next="${rest%%-*}"
+    [[ -z $next || $next == -* ]] && continue
+
+    (( descendant_counts[$next]++ ))
+
+    if [[ -z ${seen[$next]:-} ]]; then
+      seen[$next]=1
+      candidates+=("$next")
+
+      exact_file="$bin_dir/$prefix-$next"
+      if [[ -f $exact_file && -x $exact_file ]] && _omarchy_summary_from_file "$exact_file"; then
+        descriptions[$next]="$REPLY"
+        has_exact_summary[$next]=1
+      elif _omarchy_summary_from_file "$file"; then
+        descriptions[$next]="$REPLY"
+      fi
+    fi
+  done
+
+  if (( CURRENT == 2 )); then
+    candidates+=("commands")
+    descriptions[commands]="List documented Omarchy commands"
+    has_exact_summary[commands]=1
+  fi
+
+  if (( ${#candidates[@]} == 0 )); then
+    return 0
+  fi
+
+  for next in "${candidates[@]}"; do
+    summary="${descriptions[$next]:-}"
+    if (( ${descendant_counts[$next]:-0} > 1 )) && [[ -z ${has_exact_summary[$next]:-} ]]; then
+      summary="Omarchy $next commands"
+    fi
+    summary="${summary//:/ -}"
+    described_candidates+=("$next:$summary")
+  done
+
+  _describe -t omarchy-commands 'omarchy command' described_candidates -S " " -q
+}
+
+_omarchy "$@"

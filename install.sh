@@ -1,28 +1,26 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO="https://github.com/omacom-io/omadots.git"
-TMPDIR="$(mktemp -d)"
-trap 'rm -rf "$TMPDIR"' EXIT
+SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 section() {
   echo -e "\n==> $1"
 }
 
-section "Cloning Omadots..."
-git clone --depth 1 "$REPO" "$TMPDIR"
+section "Installing SigmaOS dots..."
+mkdir -p "$HOME/.config" "$HOME/.local/bin"
+cp -rf "$SRC/config/." "$HOME/.config/"
+if [ -d "$SRC/bin" ]; then
+  cp -f "$SRC/bin/"* "$HOME/.local/bin/" 2>/dev/null || true
+fi
+for dir in "$SRC/config"/*/; do
+  echo "✓ $(basename "$dir")"
+done
 
 section "Installing LazyVim..."
 rm -rf ~/.config/nvim
 git clone https://github.com/LazyVim/starter ~/.config/nvim
 rm -rf ~/.config/nvim/.git
-
-section "Copying dots to ~/.config..."
-mkdir -p "$HOME/.config"
-cp -rf "$TMPDIR/config/." "$HOME/.config/"
-for dir in "$TMPDIR/config"/*/; do
-  echo "✓ $(basename "$dir")"
-done
 
 section "Configuring shell..."
 case "$(basename "$SHELL")" in
@@ -51,5 +49,8 @@ EOF
   echo '. ~/.bashrc' >"$HOME/.bash_profile"
   ln -snf "$HOME/.config/shell/inputrc" "$HOME/.inputrc"
   echo "✓ Bash"
+  ;;
+fish)
+  echo "✓ Fish (config installed to ~/.config/fish)"
   ;;
 esac
