@@ -3,6 +3,22 @@ set -euo pipefail
 
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+WITH_LAZYVIM=0
+for arg in "$@"; do
+  case "$arg" in
+  --with-lazyvim) WITH_LAZYVIM=1 ;;
+  -h | --help)
+    echo "usage: install.sh [--with-lazyvim]"
+    echo "  --with-lazyvim  also install LazyVim to ~/.config/nvim"
+    exit 0
+    ;;
+  *)
+    echo "install.sh: unknown option: $arg" >&2
+    exit 2
+    ;;
+  esac
+done
+
 section() {
   echo -e "\n==> $1"
 }
@@ -17,10 +33,14 @@ for dir in "$SRC/config"/*/; do
   echo "✓ $(basename "$dir")"
 done
 
-section "Installing LazyVim..."
-rm -rf ~/.config/nvim
-git clone https://github.com/LazyVim/starter ~/.config/nvim
-rm -rf ~/.config/nvim/.git
+if [ "$WITH_LAZYVIM" -eq 1 ]; then
+  section "Installing LazyVim..."
+  rm -rf ~/.config/nvim
+  git clone https://github.com/LazyVim/starter ~/.config/nvim
+  rm -rf ~/.config/nvim/.git
+else
+  section "Skipping LazyVim (pass --with-lazyvim to install)"
+fi
 
 section "Configuring shell..."
 case "$(basename "$SHELL")" in
